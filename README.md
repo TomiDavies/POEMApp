@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# POEM Data Room
+
+A founder document data room, organized around the POEM Framework categories. Built with Next.js 16 (App Router), Postgres, and a password-gated auth layer.
 
 ## Configuration
 
@@ -10,35 +12,30 @@ The data room is protected by a single shared password. Before running the app, 
 
 ## Getting Started
 
-First, run the development server:
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint    # ESLint
+npx tsc --noEmit  # Typecheck
+npm test        # Vitest
+npm run build   # Production build
+```
 
-## Learn More
+All four run in CI on every pull request (see `.github/workflows/ci.yml`).
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/app/dataroom` — the main authenticated UI.
+- `src/app/api` — document CRUD, search, and stats endpoints.
+- `src/app/login` — the sign-in page and auth server actions.
+- `src/lib/db.ts` — Postgres data access layer.
+- `src/lib/session.ts`, `src/lib/auth-token.ts`, `src/lib/dal.ts` — session/auth primitives.
+- `src/proxy.ts` — the route gate (this Next.js version renamed `middleware.ts` to `proxy.ts`).

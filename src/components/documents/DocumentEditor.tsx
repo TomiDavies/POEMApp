@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Save, Eye, Edit3, Tag, ChevronDown, History } from 'lucide-react';
 import { Document, DocumentStatus, PoemCategory } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { cn, STATUS_CONFIG, formatDateTime } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -49,7 +48,7 @@ export function DocumentEditor({
     }
   }, [document?.id]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!title.trim()) return;
     setSaving(true);
     try {
@@ -58,7 +57,7 @@ export function DocumentEditor({
     } finally {
       setSaving(false);
     }
-  };
+  }, [title, content, status, tags, onSave]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
