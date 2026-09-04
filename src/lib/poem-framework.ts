@@ -1,5 +1,11 @@
 import { PoemCategory } from './types';
 
+/**
+ * POEM Framework® has five pillars: Vision, Proposition, Organisation,
+ * Economics and Milestones. Administrative is a data room container and is
+ * deliberately not in this array — see ADMINISTRATIVE_SECTION below. Use
+ * DATA_ROOM_SECTIONS wherever every navigable section is needed.
+ */
 export const POEM_FRAMEWORK: PoemCategory[] = [
   {
     id: 'vision',
@@ -577,6 +583,15 @@ export const POEM_FRAMEWORK: PoemCategory[] = [
       },
     ],
   },
+];
+
+/**
+ * Administrative holds the data room's index, legal, financial, commercial,
+ * technical and archive material. It is a container, not a POEM Framework®
+ * pillar, and is kept outside POEM_FRAMEWORK so no view implies a sixth
+ * pillar.
+ */
+export const ADMINISTRATIVE_SECTION: PoemCategory =
   {
     id: 'administrative',
     name: 'Administrative',
@@ -771,11 +786,21 @@ export const POEM_FRAMEWORK: PoemCategory[] = [
 `,
       },
     ],
-  },
+  };
+
+/** Every navigable section of the data room: the five pillars, then Administrative. */
+export const DATA_ROOM_SECTIONS: PoemCategory[] = [
+  ...POEM_FRAMEWORK,
+  ADMINISTRATIVE_SECTION,
 ];
 
+/** True when the id names one of the five POEM Framework® pillars. */
+export function isPoemPillar(id: string): boolean {
+  return POEM_FRAMEWORK.some((cat) => cat.id === id);
+}
+
 export function getCategoryById(id: string): PoemCategory | undefined {
-  return POEM_FRAMEWORK.find((cat) => cat.id === id);
+  return DATA_ROOM_SECTIONS.find((cat) => cat.id === id);
 }
 
 export function getSubcategoryById(
@@ -787,7 +812,7 @@ export function getSubcategoryById(
 }
 
 export function getAllSubcategoryIds(): string[] {
-  return POEM_FRAMEWORK.flatMap((cat) =>
+  return DATA_ROOM_SECTIONS.flatMap((cat) =>
     cat.subcategories.map((sub) => sub.id)
   );
 }

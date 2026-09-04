@@ -19,7 +19,7 @@ import {
   ProjectSummary,
 } from '@/lib/types';
 import { FocusItem } from '@/lib/activity';
-import { POEM_FRAMEWORK, getCategoryById } from '@/lib/poem-framework';
+import { DATA_ROOM_SECTIONS, getCategoryById } from '@/lib/poem-framework';
 import { Button } from '@/components/ui/Button';
 import { cn, HEALTH_CONFIG, formatRelativeTime } from '@/lib/utils';
 
@@ -150,9 +150,12 @@ export function ActivityDashboardClient() {
 
         {/* Category breakdown */}
         <div>
-          <h2 className="text-sm font-semibold text-slate-900 mb-4">By POEM Category</h2>
+          <h2 className="text-sm font-semibold text-slate-900 mb-1">By Data Room Section</h2>
+          <p className="text-xs text-slate-500 mb-4">
+            The five POEM Framework&reg; pillars, then Administrative.
+          </p>
           <div className="grid md:grid-cols-2 gap-4">
-            {POEM_FRAMEWORK.map((category) => {
+            {DATA_ROOM_SECTIONS.map((category) => {
               const summary = data?.categories.find((c) => c.categoryId === category.id);
               return (
                 <CategoryPanel

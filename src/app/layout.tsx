@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "POEM DataRoom — Founder Intelligence",
-  description: "Manage your startup documents across the POEM Framework",
+  description: "Manage your startup documents across the POEM Framework®",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

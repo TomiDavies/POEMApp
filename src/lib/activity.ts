@@ -5,7 +5,7 @@ import {
   ProjectHealth,
   ProjectSummary,
 } from '@/lib/types';
-import { POEM_FRAMEWORK } from '@/lib/poem-framework';
+import { DATA_ROOM_SECTIONS } from '@/lib/poem-framework';
 import { fetchAllActivity } from '@/lib/connectors';
 
 const EMPTY_COUNTS: Record<ActivitySourceId, number> = {
@@ -90,7 +90,7 @@ export async function getCategoryActivitySummaries(): Promise<CategoryActivitySu
 
   const projectSummaries = Array.from(groups.values());
 
-  return POEM_FRAMEWORK.map((category) => {
+  return DATA_ROOM_SECTIONS.map((category) => {
     const projects = projectSummaries
       .filter((p) => p.poemCategory === category.id)
       .sort((a, b) => (b.lastActivityAt ?? '').localeCompare(a.lastActivityAt ?? ''));

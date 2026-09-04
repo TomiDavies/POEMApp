@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Edit3, RefreshCw, X } from 'lucide-react';
 import { Document, DocumentStatus, PoemCategory } from '@/lib/types';
-import { POEM_FRAMEWORK, getCategoryById, getSubcategoryById } from '@/lib/poem-framework';
+import {
+  POEM_FRAMEWORK,
+  ADMINISTRATIVE_SECTION,
+  DATA_ROOM_SECTIONS,
+  getCategoryById,
+  getSubcategoryById,
+} from '@/lib/poem-framework';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentEditor } from '@/components/documents/DocumentEditor';
 import { DeleteConfirm } from '@/components/documents/DeleteConfirm';
@@ -135,7 +141,7 @@ export function DataRoomClient() {
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-slate-900 mb-1">Data Room</h1>
             <p className="text-slate-500 text-sm">
-              Manage your startup documents across the POEM Framework.
+              Manage your startup documents across the POEM Framework&reg;.
             </p>
           </div>
 
@@ -156,7 +162,7 @@ export function DataRoomClient() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-8">
             <h2 className="text-sm font-semibold text-slate-900 mb-4">Quick Create</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {POEM_FRAMEWORK.map((cat) =>
+              {DATA_ROOM_SECTIONS.map((cat) =>
                 cat.subcategories.map((sub) => (
                   <button
                     key={`${cat.id}-${sub.id}`}
@@ -199,39 +205,38 @@ export function DataRoomClient() {
             </div>
           )}
 
-          {/* Framework overview */}
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 mb-4">POEM Framework</h2>
+          {/* The five pillars */}
+          <div className="mb-8">
+            <h2 className="text-sm font-semibold text-slate-900 mb-1">POEM Framework&reg;</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Five pillars: Vision, Proposition, Organisation, Economics, Milestones.
+            </p>
             <div className="grid md:grid-cols-2 gap-4">
               {POEM_FRAMEWORK.map((cat) => (
-                <div
+                <SectionCard
                   key={cat.id}
-                  className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-slate-300 transition-colors"
+                  category={cat}
+                  count={stats?.byCategory[cat.id] ?? 0}
                   onClick={() => router.push(`/dataroom?category=${cat.id}`)}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <span className="font-semibold text-sm text-slate-900">{cat.name}</span>
-                    <span className="text-xs text-slate-400 ml-auto">
-                      {stats?.byCategory[cat.id] ?? 0} docs
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-3">{cat.description}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {cat.subcategories.map((sub) => (
-                      <span
-                        key={sub.id}
-                        className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
-                      >
-                        {sub.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                />
               ))}
+            </div>
+          </div>
+
+          {/* Administrative sits outside the framework */}
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900 mb-1">Data Room</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Supporting material. Not a framework pillar.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <SectionCard
+                category={ADMINISTRATIVE_SECTION}
+                count={stats?.byCategory[ADMINISTRATIVE_SECTION.id] ?? 0}
+                onClick={() =>
+                  router.push(`/dataroom?category=${ADMINISTRATIVE_SECTION.id}`)
+                }
+              />
             </div>
           </div>
         </div>
@@ -406,6 +411,43 @@ export function DataRoomClient() {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
+
+function SectionCard({
+  category,
+  count,
+  onClick,
+}: {
+  category: PoemCategory;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-slate-300 transition-colors"
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <span
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: category.color }}
+        />
+        <span className="font-semibold text-sm text-slate-900">{category.name}</span>
+        <span className="text-xs text-slate-400 ml-auto">{count} docs</span>
+      </div>
+      <p className="text-xs text-slate-500 mb-3">{category.description}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {category.subcategories.map((sub) => (
+          <span
+            key={sub.id}
+            className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+          >
+            {sub.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
