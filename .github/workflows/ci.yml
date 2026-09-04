@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - claude/founder-dataroom-poem-framework-E5hOV
+      - main
 
 jobs:
   build:
