@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
+  Activity,
   ChevronDown,
   ChevronRight,
   FileText,
@@ -33,6 +34,7 @@ export function Sidebar({ counts = {} }: SidebarProps) {
   };
 
   const isHome = pathname === '/' || (pathname === '/dataroom' && !currentCategory);
+  const isActivity = pathname === '/dashboard';
 
   return (
     <aside className="w-64 shrink-0 bg-slate-900 text-slate-100 flex flex-col h-full overflow-y-auto">
@@ -63,6 +65,19 @@ export function Sidebar({ counts = {} }: SidebarProps) {
         >
           <LayoutDashboard size={16} />
           Overview
+        </Link>
+
+        <Link
+          href="/dashboard"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors mt-0.5',
+            isActivity
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+          )}
+        >
+          <Activity size={16} />
+          Activity
         </Link>
 
         {/* POEM sections */}

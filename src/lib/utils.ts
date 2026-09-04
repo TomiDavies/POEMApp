@@ -58,3 +58,20 @@ export const STATUS_CONFIG = {
   published: { label: 'Published', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
   archived: { label: 'Archived', className: 'bg-slate-100 text-slate-600 border-slate-200' },
 } as const;
+
+export const HEALTH_CONFIG = {
+  on_track: { label: 'On track', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  attention: { label: 'Needs attention', className: 'bg-amber-100 text-amber-700 border-amber-200' },
+  stale: { label: 'Stale', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+} as const;
+
+export function formatRelativeTime(dateString: string): string {
+  const diffMs = new Date(dateString).getTime() - Date.now();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'tomorrow';
+  if (diffDays === -1) return 'yesterday';
+  if (diffDays > 1) return `in ${diffDays} days`;
+  return `${Math.abs(diffDays)} days ago`;
+}
