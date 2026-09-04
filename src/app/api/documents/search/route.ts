@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { documentsDb } from '@/lib/db';
 import { parseDbDocument } from '@/lib/utils';
+import { requireApiSession } from '@/lib/dal';
 
 export async function GET(request: NextRequest) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') ?? '';
 

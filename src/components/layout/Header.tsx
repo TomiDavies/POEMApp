@@ -2,8 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { LogOut, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logout } from '@/app/login/actions';
 
 export function Header() {
   const [query, setQuery] = useState('');
@@ -49,6 +50,15 @@ export function Header() {
             </button>
           )}
         </div>
+      </form>
+      <form action={logout}>
+        <button
+          type="submit"
+          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <LogOut size={13} />
+          Sign out
+        </button>
       </form>
     </header>
   );

@@ -1,5 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Configuration
+
+The data room is protected by a single shared password. Before running the app, copy `.env.example` to `.env.local` and set:
+
+- `DATAROOM_PASSWORD` — the password required to sign in.
+- `SESSION_SECRET` — a random secret used to sign session cookies. Generate one with `openssl rand -base64 32`.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { documentsDb } from '@/lib/db';
+import { requireApiSession } from '@/lib/dal';
 
 export async function GET() {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const byCat = documentsDb.countByCategory();
     const bySub = documentsDb.countBySubcategory();

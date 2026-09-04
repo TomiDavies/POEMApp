@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { documentsDb } from '@/lib/db';
 import { parseDbDocument } from '@/lib/utils';
 import { nanoid } from 'nanoid';
+import { requireApiSession } from '@/lib/dal';
 
 export async function GET(request: NextRequest) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
   const subcategory = searchParams.get('subcategory');
@@ -24,6 +28,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await request.json();
     const { title, content, category, subcategory, status = 'draft', tags = [] } = body;

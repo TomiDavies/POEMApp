@@ -66,8 +66,10 @@ export function DataRoomClient() {
   }, []);
 
   useEffect(() => {
-    fetchDocuments();
-    fetchStats();
+    Promise.resolve().then(() => {
+      fetchDocuments();
+      fetchStats();
+    });
   }, [fetchDocuments, fetchStats]);
 
   const openEditor = (doc?: Document, catId?: string, subId?: string) => {
