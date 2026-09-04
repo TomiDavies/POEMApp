@@ -6,6 +6,7 @@ The data room is protected by a single shared password. Before running the app, 
 
 - `DATAROOM_PASSWORD` — the password required to sign in.
 - `SESSION_SECRET` — a random secret used to sign session cookies. Generate one with `openssl rand -base64 32`.
+- `DATABASE_URL` — a Postgres connection string. Works with any Postgres provider (Vercel Postgres, Neon, Supabase, Railway, self-hosted, etc.) or a local instance for development. Tables are created automatically on first connection — no separate migration step.
 
 ## Getting Started
 

@@ -12,7 +12,7 @@ export async function GET(
 
   const { id } = await params;
   try {
-    const doc = documentsDb.getById(id);
+    const doc = await documentsDb.getById(id);
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(parseDbDocument(doc));
   } catch {
@@ -38,7 +38,7 @@ export async function PUT(
     if (status !== undefined) updates.status = status;
     if (tags !== undefined) updates.tags = JSON.stringify(tags);
 
-    const doc = documentsDb.update(id, updates as Parameters<typeof documentsDb.update>[1]);
+    const doc = await documentsDb.update(id, updates as Parameters<typeof documentsDb.update>[1]);
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(parseDbDocument(doc));
   } catch {
@@ -55,7 +55,7 @@ export async function DELETE(
 
   const { id } = await params;
   try {
-    const ok = documentsDb.delete(id);
+    const ok = await documentsDb.delete(id);
     if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch {

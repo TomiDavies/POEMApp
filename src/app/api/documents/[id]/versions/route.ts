@@ -11,7 +11,7 @@ export async function GET(
 
   const { id } = await params;
   try {
-    const versions = documentsDb.getVersions(id);
+    const versions = await documentsDb.getVersions(id);
     return NextResponse.json(versions);
   } catch {
     return NextResponse.json({ error: 'Failed to fetch versions' }, { status: 500 });

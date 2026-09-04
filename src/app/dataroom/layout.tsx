@@ -10,8 +10,8 @@ export default async function DataRoomLayout({ children }: { children: React.Rea
     redirect('/login');
   }
 
-  const byCat = documentsDb.countByCategory();
-  const bySub = documentsDb.countBySubcategory();
+  const byCat = await documentsDb.countByCategory();
+  const bySub = await documentsDb.countBySubcategory();
   const counts = { ...byCat, ...bySub };
 
   return (

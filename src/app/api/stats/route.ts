@@ -7,9 +7,9 @@ export async function GET() {
   if (unauthorized) return unauthorized;
 
   try {
-    const byCat = documentsDb.countByCategory();
-    const bySub = documentsDb.countBySubcategory();
-    const all = documentsDb.getAll();
+    const byCat = await documentsDb.countByCategory();
+    const bySub = await documentsDb.countBySubcategory();
+    const all = await documentsDb.getAll();
     return NextResponse.json({
       total: all.length,
       byCategory: byCat,

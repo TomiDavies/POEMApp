@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const docs = documentsDb.search(query);
+    const docs = await documentsDb.search(query);
     return NextResponse.json(docs.map(parseDbDocument));
   } catch {
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });

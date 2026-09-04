@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
   try {
     let rows;
     if (category && subcategory) {
-      rows = documentsDb.getBySubcategory(category, subcategory);
+      rows = await documentsDb.getBySubcategory(category, subcategory);
     } else if (category) {
-      rows = documentsDb.getByCategory(category);
+      rows = await documentsDb.getByCategory(category);
     } else {
-      rows = documentsDb.getAll();
+      rows = await documentsDb.getAll();
     }
     return NextResponse.json(rows.map(parseDbDocument));
   } catch {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const doc = documentsDb.create({
+    const doc = await documentsDb.create({
       id: nanoid(),
       title,
       content: content ?? '',
