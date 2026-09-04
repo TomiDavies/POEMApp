@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { documentsDb } from '@/lib/db';
 import { parseDbDocument } from '@/lib/utils';
+import { requireApiSession } from '@/lib/dal';
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   try {
-    const doc = documentsDb.getById(id);
+    const doc = await documentsDb.getById(id);
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(parseDbDocument(doc));
   } catch {
@@ -20,6 +24,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   try {
     const body = await request.json();
@@ -31,7 +38,7 @@ export async function PUT(
     if (status !== undefined) updates.status = status;
     if (tags !== undefined) updates.tags = JSON.stringify(tags);
 
-    const doc = documentsDb.update(id, updates as Parameters<typeof documentsDb.update>[1]);
+    const doc = await documentsDb.update(id, updates as Parameters<typeof documentsDb.update>[1]);
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(parseDbDocument(doc));
   } catch {
@@ -43,9 +50,12 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   try {
-    const ok = documentsDb.delete(id);
+    const ok = await documentsDb.delete(id);
     if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch {

@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { documentsDb } from '@/lib/db';
+import { requireApiSession } from '@/lib/dal';
 
 export async function GET() {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
-    const byCat = documentsDb.countByCategory();
-    const bySub = documentsDb.countBySubcategory();
-    const all = documentsDb.getAll();
+    const byCat = await documentsDb.countByCategory();
+    const bySub = await documentsDb.countBySubcategory();
+    const all = await documentsDb.getAll();
     return NextResponse.json({
       total: all.length,
       byCategory: byCat,

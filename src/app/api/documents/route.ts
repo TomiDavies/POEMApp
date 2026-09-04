@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { documentsDb } from '@/lib/db';
 import { parseDbDocument } from '@/lib/utils';
 import { nanoid } from 'nanoid';
+import { requireApiSession } from '@/lib/dal';
 
 export async function GET(request: NextRequest) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
   const subcategory = searchParams.get('subcategory');
@@ -11,11 +15,11 @@ export async function GET(request: NextRequest) {
   try {
     let rows;
     if (category && subcategory) {
-      rows = documentsDb.getBySubcategory(category, subcategory);
+      rows = await documentsDb.getBySubcategory(category, subcategory);
     } else if (category) {
-      rows = documentsDb.getByCategory(category);
+      rows = await documentsDb.getByCategory(category);
     } else {
-      rows = documentsDb.getAll();
+      rows = await documentsDb.getAll();
     }
     return NextResponse.json(rows.map(parseDbDocument));
   } catch {
@@ -24,6 +28,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await request.json();
     const { title, content, category, subcategory, status = 'draft', tags = [] } = body;
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const doc = documentsDb.create({
+    const doc = await documentsDb.create({
       id: nanoid(),
       title,
       content: content ?? '',

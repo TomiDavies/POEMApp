@@ -1,11 +1,17 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { documentsDb } from '@/lib/db';
+import { hasValidSession } from '@/lib/session';
 
-export default function DataRoomLayout({ children }: { children: React.ReactNode }) {
-  const byCat = documentsDb.countByCategory();
-  const bySub = documentsDb.countBySubcategory();
+export default async function DataRoomLayout({ children }: { children: React.ReactNode }) {
+  if (!(await hasValidSession())) {
+    redirect('/login');
+  }
+
+  const byCat = await documentsDb.countByCategory();
+  const bySub = await documentsDb.countBySubcategory();
   const counts = { ...byCat, ...bySub };
 
   return (

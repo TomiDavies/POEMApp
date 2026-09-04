@@ -1,54 +1,72 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DB_PATH = path.join(DATA_DIR, 'dataroom.db');
-
-let db: Database.Database | null = null;
-
-function getDb(): Database.Database {
-  if (db) return db;
-
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+function getConnectionString(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL environment variable is not set.');
   }
+  return url;
+}
 
-  db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+let pool: Pool | null = null;
+let schemaReady: Promise<void> | null = null;
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS documents (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL DEFAULT '',
-      category TEXT NOT NULL,
-      subcategory TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'draft',
-      version INTEGER NOT NULL DEFAULT 1,
-      tags TEXT NOT NULL DEFAULT '[]',
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
+function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({ connectionString: getConnectionString() });
+  }
+  return pool;
+}
 
-    CREATE TABLE IF NOT EXISTS document_versions (
-      id TEXT PRIMARY KEY,
-      document_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      version INTEGER NOT NULL,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
-    );
+function ensureSchema(): Promise<void> {
+  if (!schemaReady) {
+    schemaReady = getPool()
+      .query(
+        `
+        CREATE TABLE IF NOT EXISTS documents (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL DEFAULT '',
+          category TEXT NOT NULL,
+          subcategory TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft',
+          version INTEGER NOT NULL DEFAULT 1,
+          tags TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
 
-    CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
-    CREATE INDEX IF NOT EXISTS idx_documents_subcategory ON documents(subcategory);
-    CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
-    CREATE INDEX IF NOT EXISTS idx_versions_document_id ON document_versions(document_id);
-  `);
+        CREATE TABLE IF NOT EXISTS document_versions (
+          id TEXT PRIMARY KEY,
+          document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          version INTEGER NOT NULL,
+          created_at TEXT NOT NULL
+        );
 
-  return db;
+        CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
+        CREATE INDEX IF NOT EXISTS idx_documents_subcategory ON documents(subcategory);
+        CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
+        CREATE INDEX IF NOT EXISTS idx_versions_document_id ON document_versions(document_id);
+        `
+      )
+      .then(() => undefined);
+  }
+  return schemaReady;
+}
+
+async function runQuery<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params?: unknown[]
+): Promise<QueryResult<T>> {
+  await ensureSchema();
+  return getPool().query<T>(text, params);
+}
+
+async function query<T extends QueryResultRow>(text: string, params?: unknown[]): Promise<T[]> {
+  const result = await runQuery<T>(text, params);
+  return result.rows;
 }
 
 export interface DbDocument {
@@ -74,60 +92,63 @@ export interface DbDocumentVersion {
 }
 
 export const documentsDb = {
-  getAll(): DbDocument[] {
-    return getDb()
-      .prepare('SELECT * FROM documents ORDER BY updated_at DESC')
-      .all() as DbDocument[];
+  async getAll(): Promise<DbDocument[]> {
+    return query<DbDocument>('SELECT * FROM documents ORDER BY updated_at DESC');
   },
 
-  getByCategory(category: string): DbDocument[] {
-    return getDb()
-      .prepare('SELECT * FROM documents WHERE category = ? ORDER BY updated_at DESC')
-      .all(category) as DbDocument[];
+  async getByCategory(category: string): Promise<DbDocument[]> {
+    return query<DbDocument>(
+      'SELECT * FROM documents WHERE category = $1 ORDER BY updated_at DESC',
+      [category]
+    );
   },
 
-  getBySubcategory(category: string, subcategory: string): DbDocument[] {
-    return getDb()
-      .prepare(
-        'SELECT * FROM documents WHERE category = ? AND subcategory = ? ORDER BY updated_at DESC'
-      )
-      .all(category, subcategory) as DbDocument[];
+  async getBySubcategory(category: string, subcategory: string): Promise<DbDocument[]> {
+    return query<DbDocument>(
+      'SELECT * FROM documents WHERE category = $1 AND subcategory = $2 ORDER BY updated_at DESC',
+      [category, subcategory]
+    );
   },
 
-  getById(id: string): DbDocument | undefined {
-    return getDb()
-      .prepare('SELECT * FROM documents WHERE id = ?')
-      .get(id) as DbDocument | undefined;
+  async getById(id: string): Promise<DbDocument | undefined> {
+    const rows = await query<DbDocument>('SELECT * FROM documents WHERE id = $1', [id]);
+    return rows[0];
   },
 
-  search(query: string): DbDocument[] {
-    const like = `%${query}%`;
-    return getDb()
-      .prepare(
-        'SELECT * FROM documents WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC'
-      )
-      .all(like, like) as DbDocument[];
+  async search(searchQuery: string): Promise<DbDocument[]> {
+    const like = `%${searchQuery}%`;
+    return query<DbDocument>(
+      'SELECT * FROM documents WHERE title ILIKE $1 OR content ILIKE $1 ORDER BY updated_at DESC',
+      [like]
+    );
   },
 
-  create(doc: Omit<DbDocument, 'version'> & { version?: number }): DbDocument {
+  async create(doc: Omit<DbDocument, 'version'> & { version?: number }): Promise<DbDocument> {
     const now = new Date().toISOString();
-    const stmt = getDb().prepare(`
-      INSERT INTO documents (id, title, content, category, subcategory, status, version, tags, created_at, updated_at)
-      VALUES (@id, @title, @content, @category, @subcategory, @status, @version, @tags, @created_at, @updated_at)
-    `);
-    stmt.run({
-      ...doc,
-      version: doc.version ?? 1,
-      updated_at: now,
-    });
-    return this.getById(doc.id)!;
+    await runQuery(
+      `INSERT INTO documents (id, title, content, category, subcategory, status, version, tags, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        doc.id,
+        doc.title,
+        doc.content,
+        doc.category,
+        doc.subcategory,
+        doc.status,
+        doc.version ?? 1,
+        doc.tags,
+        doc.created_at,
+        now,
+      ]
+    );
+    return (await this.getById(doc.id))!;
   },
 
-  update(
+  async update(
     id: string,
     updates: Partial<Pick<DbDocument, 'title' | 'content' | 'status' | 'tags'>>
-  ): DbDocument | undefined {
-    const existing = this.getById(id);
+  ): Promise<DbDocument | undefined> {
+    const existing = await this.getById(id);
     if (!existing) return undefined;
 
     const now = new Date().toISOString();
@@ -135,51 +156,53 @@ export const documentsDb = {
 
     // Save a version snapshot before updating
     const versionId = `${id}-v${existing.version}`;
-    getDb()
-      .prepare(`
-        INSERT OR IGNORE INTO document_versions (id, document_id, title, content, version, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `)
-      .run(versionId, id, existing.title, existing.content, existing.version, now);
+    await runQuery(
+      `INSERT INTO document_versions (id, document_id, title, content, version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO NOTHING`,
+      [versionId, id, existing.title, existing.content, existing.version, now]
+    );
 
-    const fields = Object.entries(updates)
-      .filter(([, v]) => v !== undefined)
-      .map(([k]) => `${k} = @${k}`)
-      .join(', ');
+    const entries = Object.entries(updates).filter(([, v]) => v !== undefined) as [
+      string,
+      string,
+    ][];
+    const setClauses = entries.map(([key], i) => `${key} = $${i + 1}`);
+    const versionParam = entries.length + 1;
+    const updatedAtParam = entries.length + 2;
+    const idParam = entries.length + 3;
 
-    getDb()
-      .prepare(`UPDATE documents SET ${fields}, version = @version, updated_at = @updated_at WHERE id = @id`)
-      .run({ ...updates, version: newVersion, updated_at: now, id });
+    await runQuery(
+      `UPDATE documents SET ${setClauses.join(', ')}, version = $${versionParam}, updated_at = $${updatedAtParam} WHERE id = $${idParam}`,
+      [...entries.map(([, v]) => v), newVersion, now, id]
+    );
 
     return this.getById(id);
   },
 
-  delete(id: string): boolean {
-    const result = getDb().prepare('DELETE FROM documents WHERE id = ?').run(id);
-    return result.changes > 0;
+  async delete(id: string): Promise<boolean> {
+    const result = await runQuery('DELETE FROM documents WHERE id = $1', [id]);
+    return (result.rowCount ?? 0) > 0;
   },
 
-  getVersions(documentId: string): DbDocumentVersion[] {
-    return getDb()
-      .prepare(
-        'SELECT * FROM document_versions WHERE document_id = ? ORDER BY version DESC'
-      )
-      .all(documentId) as DbDocumentVersion[];
+  async getVersions(documentId: string): Promise<DbDocumentVersion[]> {
+    return query<DbDocumentVersion>(
+      'SELECT * FROM document_versions WHERE document_id = $1 ORDER BY version DESC',
+      [documentId]
+    );
   },
 
-  countByCategory(): Record<string, number> {
-    const rows = getDb()
-      .prepare('SELECT category, COUNT(*) as count FROM documents GROUP BY category')
-      .all() as { category: string; count: number }[];
-    return Object.fromEntries(rows.map((r) => [r.category, r.count]));
+  async countByCategory(): Promise<Record<string, number>> {
+    const rows = await query<{ category: string; count: string }>(
+      'SELECT category, COUNT(*) as count FROM documents GROUP BY category'
+    );
+    return Object.fromEntries(rows.map((r) => [r.category, Number(r.count)]));
   },
 
-  countBySubcategory(): Record<string, number> {
-    const rows = getDb()
-      .prepare(
-        "SELECT category || '/' || subcategory as key, COUNT(*) as count FROM documents GROUP BY key"
-      )
-      .all() as { key: string; count: number }[];
-    return Object.fromEntries(rows.map((r) => [r.key, r.count]));
+  async countBySubcategory(): Promise<Record<string, number>> {
+    const rows = await query<{ key: string; count: string }>(
+      "SELECT category || '/' || subcategory as key, COUNT(*) as count FROM documents GROUP BY key"
+    );
+    return Object.fromEntries(rows.map((r) => [r.key, Number(r.count)]));
   },
 };
